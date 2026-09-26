@@ -41,7 +41,8 @@ uv run codex-reset-tracker run
 | List tracked accounts | `uv run codex-reset-tracker accounts list` |
 | Add one account | `uv run codex-reset-tracker accounts add thsottiaux --timezone America/Los_Angeles` |
 | Remove one account | `uv run codex-reset-tracker accounts remove thsottiaux` |
-| Refresh recommended accounts | `uv run codex-reset-tracker accounts defaults` |
+| Add focused recommended accounts | `uv run codex-reset-tracker accounts defaults` |
+| Trim retired defaults, keep custom accounts | `uv run codex-reset-tracker accounts focus` |
 
 `setup` writes normal settings to `config.json` and secrets to `.env`. You should
 not need to hand-edit JSON for normal use.
@@ -219,7 +220,7 @@ enable notifications in your Discord client.
 
 The tracker has two safeguards:
 
-1. Searches are generated as `from:<handle> reset`.
+1. It polls the configured account timelines; optional searches can be scoped as `from:<handle> reset`.
 2. Every tweet is checked again locally; only authors in `polling.accounts` can
    alert.
 
@@ -228,35 +229,30 @@ That means broad or noisy search results from unrelated accounts are recorded as
 
 ### Seeded Watchlist
 
-The default watchlist includes official accounts and relevant people from
-OpenAI, Anthropic/Claude and SpaceXAI/Grok.
+The focused default watchlist has six accounts. It follows the announcement
+sources identified by [Codex Reset's Tibo radar](https://codex-reset.com/tibo)
+and [WhenReset's Codex](https://whenreset.dev/codex),
+[Claude](https://whenreset.dev/claude), and
+[Grok](https://whenreset.dev/grok) pages.
 
 | Group | Handles |
 | --- | --- |
-| OpenAI official | `@OpenAI`, `@OpenAIDevs`, `@ChatGPTapp`, `@OpenAIStatus` |
-| OpenAI people | `@sama`, `@gdb`, `@markchen90`, `@nickaturley`, `@kevinweil` |
-| OpenAI Codex | `@thsottiaux`, `@embirico`, `@hansonwng`, `@katyhshi` |
-| Anthropic official | `@AnthropicAI`, `@claudeai`, `@ClaudeDevs` |
-| Anthropic people | `@DarioAmodei`, `@DanielaAmodei`, `@jackclarkSF`, `@mikeyk`, `@ch402` |
-| Claude Code | `@bcherny` |
-| SpaceXAI and Grok | `@SpaceXAI`, `@grok`, `@bot` (Grok Bot) |
-| Grok people | `@elonmusk` |
+| Codex | `@thsottiaux` |
+| Claude | `@ClaudeDevs` |
+| Grok | `@grok`, `@bot` (Grok Bot), `@elonmusk`, `@SpaceXAI` |
 
-Sources used to seed this list include official X pages and public index pages
-for [OpenAI Developers](https://x.com/OpenAIDevs),
-[Tibo / Codex](https://x.com/thsottiaux/with_replies?lang=en),
-[Anthropic](https://x.com/AnthropicAI/status/2025997928242811253?lang=en),
-[Claude](https://x.com/claudeai/status/1972706815885373936), the reported
-[@ClaudeDevs launch](https://awesomeagents.ai/news/anthropic-claudedevs-x-account-launch/),
-and public profiles for [Boris Cherny](https://x.com/bcherny/status/2015524460481388760)
-and the [Anthropic radar](https://llmgram.app/anthropic-radar/).
-The Grok watchlist is informed by [SpaceXAI's official account links](https://x.ai/contact)
-and [whenreset.dev's Grok source list](https://whenreset.dev/grok).
+WhenReset lists the first five as its core public-post sources; its Grok page
+also lists `@SpaceXAI`. [SpaceXAI links its official accounts](https://x.ai/contact).
 For broad accounts such as `@elonmusk` and `@SpaceXAI`, a Grok product cue and
 a usage/limit cue are required in addition to the reset keyword. Grok Bot alerts
 are labeled separately because its allowance is separate from Grok chat.
-Existing `config.json` files keep their account choices; run
-`uv run codex-reset-tracker accounts defaults` to add the new recommendations.
+
+New setups use only these six. Existing `config.json` files keep their account
+choices. Run `uv run codex-reset-tracker accounts focus` to remove the older
+recommended accounts while keeping any other account you added manually; then
+run `uv run codex-reset-tracker accounts list` and restart the bot. The
+`accounts defaults` command only adds the focused accounts and does not remove
+existing ones. You can add a retired account again with `accounts add`.
 
 Reset posts are potential signals, not confirmation that a particular account's
 quota changed. Banked resets and reset tokens may require redemption; read the

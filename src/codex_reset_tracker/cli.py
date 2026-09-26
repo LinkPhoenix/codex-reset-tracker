@@ -21,6 +21,7 @@ from .ops import (
     daemon_status,
     daemon_stop,
     doctor_checks,
+    focus_default_accounts,
     install_default_accounts,
     install_user_service,
     install_windows_startup_task,
@@ -128,6 +129,7 @@ def build_parser() -> argparse.ArgumentParser:
     accounts_subcommands = accounts_cmd.add_subparsers(dest="accounts_command", required=True)
     accounts_subcommands.add_parser("list", help="list tracked accounts")
     accounts_subcommands.add_parser("defaults", help="install or refresh recommended accounts")
+    accounts_subcommands.add_parser("focus", help="remove retired defaults and keep custom accounts")
     add_account = accounts_subcommands.add_parser("add", help="add one tracked account")
     add_account.add_argument("handle")
     add_account.add_argument(
@@ -262,6 +264,9 @@ def accounts(args) -> int:
     elif command == "defaults":
         install_default_accounts(args.config)
         LOGGER.info("installed recommended tracked accounts in %s", args.config)
+    elif command == "focus":
+        focus_default_accounts(args.config)
+        LOGGER.info("focused tracked accounts in %s", args.config)
     elif command == "add":
         add_account_config(args.config, args.handle, args.timezone)
         LOGGER.info("added @%s to %s", args.handle.lstrip("@"), args.config)

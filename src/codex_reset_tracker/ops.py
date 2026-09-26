@@ -16,6 +16,7 @@ from typing import Any
 
 from .accounts import (
     DEFAULT_TRACKED_ACCOUNTS,
+    RETIRED_DEFAULT_HANDLES,
     normalize_handle,
     unique_handles,
 )
@@ -190,6 +191,14 @@ def remove_account_config(config_path: Path, handle: str) -> Path:
 def install_default_accounts(config_path: Path) -> Path:
     raw_config = _read_config_or_starter(config_path)
     _merge_default_accounts(raw_config)
+    _sync_reset_search_queries(raw_config)
+    _write_config(config_path, raw_config)
+    return config_path
+
+
+def focus_default_accounts(config_path: Path) -> Path:
+    raw_config = _read_config_or_starter(config_path)
+    _focus_default_accounts(raw_config)
     _sync_reset_search_queries(raw_config)
     _write_config(config_path, raw_config)
     return config_path
@@ -585,6 +594,22 @@ def _merge_default_accounts(raw_config: dict[str, Any]) -> None:
         add_account_to_config(raw_config, account.handle, account.timezone)
 
 
+def _focus_default_accounts(raw_config: dict[str, Any]) -> None:
+    polling = raw_config.setdefault("polling", {})
+    polling["accounts"] = [
+        handle
+        for handle in unique_handles(polling.get("accounts", []))
+        if handle.lower() not in RETIRED_DEFAULT_HANDLES
+    ]
+    present = {handle.lower() for handle in polling["accounts"]}
+    timezones = raw_config.setdefault("time", {}).setdefault("account_timezones", {})
+    for account in DEFAULT_TRACKED_ACCOUNTS:
+        if account.handle.lower() not in present:
+            # Bundled zones are fixed; config editing must work without system tzdata.
+            polling["accounts"].append(account.handle)
+            timezones.setdefault(account.handle, account.timezone)
+
+
 def add_account_to_config(
     raw_config: dict[str, Any],
     handle: str,
@@ -710,9 +735,9 @@ def _configure_accounts(
 ) -> None:
     if not non_interactive:
         print(f"\n{step_label}")
-        print("Default watchlist includes OpenAI, Anthropic/Claude and Grok accounts plus relevant people.")
+        print("Focused watchlist: @thsottiaux, @ClaudeDevs, @grok, @bot, @elonmusk, @SpaceXAI.")
         print("Only tweets from these trusted handles can alert.")
-    if _yes_no("Install or refresh the recommended Codex + Claude + Grok watchlist?", True, non_interactive):
+    if _yes_no("Install or refresh the focused Codex + Claude + Grok watchlist?", True, non_interactive):
         _merge_default_accounts(raw_config)
 
     while not non_interactive and _yes_no("Add another account manually?", False, non_interactive):

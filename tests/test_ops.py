@@ -15,6 +15,7 @@ from codex_reset_tracker.ops import (
     remove_account_config,
     _validate_service_prereqs,
     doctor_checks,
+    focus_default_accounts,
     OpsError,
     _windows_startup_task_xml,
     _unit_text,
@@ -39,7 +40,10 @@ class OpsTests(unittest.TestCase):
 
             config = json.loads(config_path.read_text(encoding="utf-8"))
             self.assertEqual(config["time"]["user_timezone"], "auto")
-            self.assertIn("AnthropicAI", config["polling"]["accounts"])
+            self.assertEqual(
+                config["polling"]["accounts"],
+                ["thsottiaux", "ClaudeDevs", "grok", "bot", "elonmusk", "SpaceXAI"],
+            )
             self.assertEqual(config["polling"]["search_queries"], [])
             self.assertIn("account_timezones", config["time"])
             self.assertIn("Add secrets here", env_path.read_text(encoding="utf-8"))
@@ -51,10 +55,45 @@ class OpsTests(unittest.TestCase):
 
             config = json.loads(config_path.read_text(encoding="utf-8"))
 
-            self.assertIn("OpenAIDevs", config["polling"]["accounts"])
-            self.assertIn("ClaudeDevs", config["polling"]["accounts"])
-            self.assertIn("bcherny", config["polling"]["accounts"])
+            self.assertEqual(
+                config["polling"]["accounts"],
+                ["thsottiaux", "ClaudeDevs", "grok", "bot", "elonmusk", "SpaceXAI"],
+            )
             self.assertEqual(config["polling"]["search_queries"], [])
+
+    def test_focus_removes_retired_defaults_and_keeps_custom_accounts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            config_path = Path(tmp) / "config.json"
+            config_path.write_text(
+                json.dumps({
+                    "polling": {"accounts": ["OpenAI", "claudeai", "custom_dev", "grok"]},
+                    "time": {"account_timezones": {"custom_dev": "Europe/London", "grok": "UTC"}},
+                }),
+                encoding="utf-8",
+            )
+
+            with patch("codex_reset_tracker.ops.is_valid_timezone", return_value=True):
+                install_default_accounts(config_path)
+            before = json.loads(config_path.read_text(encoding="utf-8"))
+            self.assertIn("OpenAI", before["polling"]["accounts"])
+            before["time"]["account_timezones"]["grok"] = "UTC"
+            config_path.write_text(json.dumps(before), encoding="utf-8")
+
+            focus_default_accounts(config_path)
+            after = json.loads(config_path.read_text(encoding="utf-8"))
+
+            self.assertEqual(
+                set(after["polling"]["accounts"]),
+                {"thsottiaux", "ClaudeDevs", "grok", "bot", "elonmusk", "SpaceXAI", "custom_dev"},
+            )
+            self.assertEqual(after["time"]["account_timezones"]["custom_dev"], "Europe/London")
+            self.assertEqual(after["time"]["account_timezones"]["grok"], "UTC")
+
+            focus_default_accounts(config_path)
+            self.assertEqual(
+                json.loads(config_path.read_text(encoding="utf-8"))["polling"]["accounts"],
+                after["polling"]["accounts"],
+            )
 
     def test_account_add_remove_and_summary(self):
         with tempfile.TemporaryDirectory() as tmp:

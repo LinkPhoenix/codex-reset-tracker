@@ -11,7 +11,7 @@ class TrackedAccount:
     note: str
 
 
-DEFAULT_TRACKED_ACCOUNTS: tuple[TrackedAccount, ...] = (
+KNOWN_TRACKED_ACCOUNTS: tuple[TrackedAccount, ...] = (
     TrackedAccount("OpenAI", "America/Los_Angeles", "openai-official", "official OpenAI"),
     TrackedAccount("OpenAIDevs", "America/Los_Angeles", "openai-official", "official OpenAI developer updates"),
     TrackedAccount("ChatGPTapp", "America/Los_Angeles", "openai-official", "official ChatGPT product updates"),
@@ -40,6 +40,22 @@ DEFAULT_TRACKED_ACCOUNTS: tuple[TrackedAccount, ...] = (
     TrackedAccount("elonmusk", "America/Los_Angeles", "xai-people", "Elon Musk / Grok announcements"),
 )
 
+FOCUSED_DEFAULT_HANDLES = (
+    "thsottiaux",
+    "ClaudeDevs",
+    "grok",
+    "bot",
+    "elonmusk",
+    "SpaceXAI",
+)
+_KNOWN_BY_HANDLE = {account.handle.lower(): account for account in KNOWN_TRACKED_ACCOUNTS}
+DEFAULT_TRACKED_ACCOUNTS = tuple(
+    _KNOWN_BY_HANDLE[handle.lower()] for handle in FOCUSED_DEFAULT_HANDLES
+)
+RETIRED_DEFAULT_HANDLES = frozenset(
+    _KNOWN_BY_HANDLE.keys() - {handle.lower() for handle in FOCUSED_DEFAULT_HANDLES}
+)
+
 
 def default_account_handles() -> tuple[str, ...]:
     return tuple(account.handle for account in DEFAULT_TRACKED_ACCOUNTS)
@@ -51,10 +67,8 @@ def default_account_timezones() -> dict[str, str]:
 
 def account_group_for_handle(handle: str) -> str | None:
     normalized = normalize_handle(handle).lower()
-    for account in DEFAULT_TRACKED_ACCOUNTS:
-        if account.handle.lower() == normalized:
-            return account.group
-    return None
+    account = _KNOWN_BY_HANDLE.get(normalized)
+    return account.group if account is not None else None
 
 
 def reset_search_queries(accounts: list[str] | tuple[str, ...]) -> tuple[str, ...]:
