@@ -5,14 +5,14 @@ from codex_reset_tracker.matcher import RegexMatcher
 from codex_reset_tracker.models import TweetRecord
 
 
-def tweet(text: str) -> TweetRecord:
+def tweet(text: str, author: str = "sama") -> TweetRecord:
     return TweetRecord(
         id="1",
-        author_username="sama",
-        author_name="Sam Altman",
+        author_username=author,
+        author_name=author,
         text=text,
         created_at=None,
-        url="https://x.com/sama/status/1",
+        url=f"https://x.com/{author}/status/1",
         source="test",
     )
 
@@ -61,6 +61,23 @@ class RegexMatcherTests(unittest.TestCase):
         )
 
         result = matcher.match(tweet("Looks like reset quota messaging is live."))
+
+        self.assertIsNotNone(result)
+
+    def test_elon_grok_quota_signal_requires_product_and_limit_context(self):
+        matcher = RegexMatcher(MatchingConfig())
+
+        self.assertIsNotNone(
+            matcher.match(tweet("We will reset Grok usage limits this week.", "elonmusk"))
+        )
+        self.assertIsNone(matcher.match(tweet("Reset the launch countdown.", "elonmusk")))
+        self.assertIsNone(matcher.match(tweet("We reset the launch limit.", "elonmusk")))
+        self.assertIsNone(matcher.match(tweet("Reset Grok's design theme.", "elonmusk")))
+
+    def test_grok_bot_limit_reset_matches_without_product_word_in_post(self):
+        matcher = RegexMatcher(MatchingConfig())
+
+        result = matcher.match(tweet("Weekly limits have been reset for all users.", "bot"))
 
         self.assertIsNotNone(result)
 

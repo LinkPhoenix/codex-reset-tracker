@@ -70,6 +70,50 @@ class NotifierTests(unittest.TestCase):
         title = resolve_alert_title("Potential Codex quota reset", match())
         self.assertEqual(title, "Potential Codex quota reset")
 
+    def test_grok_bot_scope_and_banked_credit_are_labeled(self):
+        grok_tweet = TweetRecord(
+            id="grok-1",
+            author_username="bot",
+            author_name="Grok Bot",
+            text="Reset tokens are available for Grok Bot users.",
+            created_at="today",
+            url="https://x.com/bot/status/1",
+            source="test",
+        )
+        grok_match = TweetMatch(
+            tweet=grok_tweet,
+            matched_patterns=("reset",),
+            excerpt=grok_tweet.text,
+        )
+
+        title = resolve_alert_title("Potential Codex quota reset", grok_match)
+        message = format_alert(title, grok_match)
+
+        self.assertEqual(title, "Potential Grok Bot reset credit")
+        self.assertEqual(message.payload["product"], "Grok Bot")
+        self.assertIn("reset credit", message.payload["signal_label"])
+        self.assertNotIn("Matched:", message.body)
+
+    def test_elon_grok_usage_reset_is_not_labeled_codex(self):
+        grok_tweet = TweetRecord(
+            id="grok-2",
+            author_username="elonmusk",
+            author_name="Elon Musk",
+            text="We will reset Grok usage limits for everyone.",
+            created_at="today",
+            url="https://x.com/elonmusk/status/2",
+            source="test",
+        )
+        grok_match = TweetMatch(
+            tweet=grok_tweet,
+            matched_patterns=("reset",),
+            excerpt=grok_tweet.text,
+        )
+
+        title = resolve_alert_title("Potential Codex quota reset", grok_match)
+
+        self.assertEqual(title, "Potential Grok quota reset")
+
     def test_wsl_desktop_notification_routes_to_windows_powershell(self):
         message = AlertMessage(
             title="Codex reset",

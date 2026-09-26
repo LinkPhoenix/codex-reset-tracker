@@ -28,7 +28,11 @@
       "jackclarkSF": "America/Los_Angeles",
       "mikeyk": "America/Los_Angeles",
       "ch402": "America/Los_Angeles",
-      "bcherny": "America/Los_Angeles"
+      "bcherny": "America/Los_Angeles",
+      "SpaceXAI": "America/Los_Angeles",
+      "grok": "America/Los_Angeles",
+      "bot": "America/Los_Angeles",
+      "elonmusk": "America/Los_Angeles"
     }
   },
   "twitter": {
@@ -72,7 +76,11 @@
       "jackclarkSF",
       "mikeyk",
       "ch402",
-      "bcherny"
+      "bcherny",
+      "SpaceXAI",
+      "grok",
+      "bot",
+      "elonmusk"
     ],
     "search_queries": []
   },

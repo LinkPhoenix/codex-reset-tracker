@@ -710,9 +710,9 @@ def _configure_accounts(
 ) -> None:
     if not non_interactive:
         print(f"\n{step_label}")
-        print("Default watchlist includes official OpenAI/Anthropic/Claude accounts plus active developer-facing people.")
+        print("Default watchlist includes OpenAI, Anthropic/Claude and Grok accounts plus relevant people.")
         print("Only tweets from these trusted handles can alert.")
-    if _yes_no("Install or refresh the recommended OpenAI + Anthropic watchlist?", True, non_interactive):
+    if _yes_no("Install or refresh the recommended Codex + Claude + Grok watchlist?", True, non_interactive):
         _merge_default_accounts(raw_config)
 
     while not non_interactive and _yes_no("Add another account manually?", False, non_interactive):

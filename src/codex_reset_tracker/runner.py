@@ -352,7 +352,7 @@ def _normalize_handle(value: str) -> str:
 
 def _matching_fingerprint(config: AppConfig) -> str:
     payload = {
-        "version": 1,
+        "version": 2,
         "case_sensitive": config.matching.case_sensitive,
         "require_all_include_patterns": config.matching.require_all_include_patterns,
         "include_patterns": list(config.matching.include_patterns),

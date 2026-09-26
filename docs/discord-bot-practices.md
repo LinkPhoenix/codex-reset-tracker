@@ -25,7 +25,7 @@ Reviewed against official documentation on 2026-09-26. This project is a self-ho
 - Discord requires an initial interaction response within 3 seconds; defer long-running work, then follow up while the interaction token remains valid.
 - Respect opt-in and opt-out. This project posts only to an admin-configured channel, offers `/stop-alerts`, and should not send unsolicited direct messages or spam. `/set-alert-channel` selects the destination, `/reset-bot-status` checks the setup, `/test-reset-alert` posts one explicitly synthetic test message, `/preview-reset-alert` shows a private preview, and `/reset-bot-help` explains the commands. Do not automate ordinary user accounts; use the official bot API.
 - `CODQ_DISCORD_TEST_GUILD_ID` optionally syncs slash commands to a single development guild for quick testing; omit it to register commands globally.
-- Filter and escape untrusted external text; preserve the source URL; distinguish Codex from Claude/Anthropic; describe inferred reset windows as estimates rather than promises. Do not claim that a public post guarantees account eligibility or an actual quota reset.
+- Filter and escape untrusted external text; preserve the source URL; distinguish Codex, Claude, Grok, and Grok Bot; describe inferred reset windows as estimates rather than promises. Do not claim that a public post guarantees account eligibility or an actual quota reset. Distinguish banked credits and reset tokens from immediate quota clears.
 
 ## Avatar and brand assets
 
@@ -35,7 +35,7 @@ Set the app icon in the Developer Portal under **General Information**. The bot 
 
 The repository has no Discord screenshot yet. Its existing images show Telegram and Windows desktop notifications. The Telegram example in `assets/telegram_noti_example.JPG` is visibly cluttered and includes raw regular-expression rules in `Matched`. The matcher stores those rule strings in `TweetMatch.matched_patterns`; the Discord embed now suppresses those implementation details and shows a concise reset-signal label instead.
 
-The Discord card uses provider-specific color, author/source identity, a short human-readable signal label, a concise escaped excerpt, an estimated reset window when present, and a direct link to the original X post. It marks the signal as unofficial and tells readers to verify the source. `/test-reset-alert` provides an ephemeral preview without posting noise into the alert channel. A live screenshot in both Discord themes and on mobile remains useful before a public rollout.
+The Discord card uses provider-specific color, author/source identity, a short human-readable signal label, a concise escaped excerpt, an estimated reset window when present, and a direct link to the original X post. It marks the signal as unofficial and tells readers to verify the source. Grok Bot and possible reset credits receive explicit labels. `/preview-reset-alert` provides an ephemeral preview without posting noise into the alert channel. A live screenshot in both Discord themes and on mobile remains useful before a public rollout.
 
 ## Official references
 

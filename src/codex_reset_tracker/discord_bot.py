@@ -11,7 +11,7 @@ from discord.ext import commands
 
 from .config import AppConfig
 from .models import TweetMatch
-from .notifiers import AlertMessage, NotificationError, format_alert
+from .notifiers import AlertMessage, NotificationError, format_alert, resolve_alert_title
 from .runner import LAST_SCAN_AT_KEY, QuotaResetTracker
 from .state import StateStore
 from .time_window import parse_created_at
@@ -57,7 +57,8 @@ class CodexResetBot(commands.Bot):
             LOGGER.info("no Discord servers are subscribed; skipping this alert")
             return {"discord": {"ok": True, "delivered": 0, "reason": "no_subscribers"}}
 
-        message = format_alert("Potential AI quota reset", match)
+        title = resolve_alert_title("Potential Codex quota reset", match)
+        message = format_alert(title, match)
         results: dict[str, dict[str, object]] = {}
         delivered_guilds = self.state.discord_delivered_guilds(match.alert_key)
         for guild_id, channel_id in destinations:
@@ -101,7 +102,7 @@ class ResetBotCommands(commands.Cog):
 
     @app_commands.command(
         name="set-alert-channel",
-        description="Use this channel for Codex and Claude reset alerts",
+        description="Use this channel for Codex, Claude and Grok reset alerts",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     @app_commands.describe(channel="Text channel that should receive reset alerts")
@@ -287,7 +288,7 @@ class ResetBotCommands(commands.Cog):
         embed = discord.Embed(
             title="Codex Reset Tracker",
             description=(
-                "This bot relays possible Codex and Claude reset signals from "
+                "This bot relays possible Codex, Claude and Grok reset signals from "
                 "tracked public X accounts. A signal is an estimate, not a guarantee."
             ),
             color=discord.Color.blurple(),
@@ -332,9 +333,11 @@ class ResetBotCommands(commands.Cog):
 
 def _alert_embed(message: AlertMessage) -> discord.Embed:
     payload = message.payload
-    product = message.title.lower()
+    product = str(payload.get("product") or message.title).lower()
     if "claude" in product:
         color = 0xD97757
+    elif "grok" in product:
+        color = 0xA1A1AA
     elif "codex" in product:
         color = 0x10A37F
     else:
@@ -349,7 +352,8 @@ def _alert_embed(message: AlertMessage) -> discord.Embed:
     )
     embed.set_author(
         name=discord.utils.escape_markdown(
-            f"@{payload.get('author_username', 'unknown')} · {payload.get('source', 'X')}"
+            f"@{payload.get('author_username', 'unknown')} · "
+            f"{'Test' if payload.get('source') == 'Test' else 'X'}"
         )[:256]
     )
     created_at = payload.get("created_at")
@@ -410,7 +414,7 @@ def _test_alert_message() -> AlertMessage:
         payload={
             "author_username": "CodexResetTracker",
             "source": "Test",
-            "excerpt": "This is a test alert. No Codex or Claude quota reset was detected.",
+            "excerpt": "This is a test alert. No Codex, Claude or Grok quota reset was detected.",
             "signal_label": "Test delivery check",
         },
     )

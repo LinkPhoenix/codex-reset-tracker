@@ -93,6 +93,8 @@ def _enabled(channels: dict[str, dict[str, Any]], name: str) -> bool:
 def format_alert(title: str, match: TweetMatch) -> AlertMessage:
     tweet = match.tweet
     window = match.reset_window
+    product = _detect_product(match)
+    signal_label = _signal_label(tweet.text)
     window_text = ""
     if window is not None:
         evidence = ", ".join(window.evidence)
@@ -105,8 +107,8 @@ def format_alert(title: str, match: TweetMatch) -> AlertMessage:
     body = (
         f"{title}\n\n"
         f"Author: @{tweet.author_username} ({tweet.author_name})\n"
-        f"Source: {tweet.source}\n"
-        f"Matched: {match.pattern_summary}\n"
+        "Source: X\n"
+        f"Signal: {signal_label}\n"
         f"{window_text}"
         f"Created: {tweet.created_at or 'unknown'}\n"
         f"URL: {tweet.url}\n\n"
@@ -114,6 +116,8 @@ def format_alert(title: str, match: TweetMatch) -> AlertMessage:
     )
     payload = {
         "title": title,
+        "product": product,
+        "signal_label": signal_label,
         "author_username": tweet.author_username,
         "author_name": tweet.author_name,
         "tweet_id": tweet.id,
@@ -141,11 +145,13 @@ def format_alert(title: str, match: TweetMatch) -> AlertMessage:
 
 def resolve_alert_title(base_title: str, match: TweetMatch) -> str:
     product = _detect_product(match)
+    if _is_reset_credit(match.tweet.text):
+        return f"Potential {product or 'AI'} reset credit"
     if product is None:
         return base_title
-    if re.search(r"\b(?:codex|claude)\b", base_title, flags=re.IGNORECASE):
+    if re.search(r"\b(?:codex|claude|grok)\b", base_title, flags=re.IGNORECASE):
         return re.sub(
-            r"\b(?:codex|claude)\b",
+            r"\b(?:codex|claude|grok)\b",
             product,
             base_title,
             count=1,
@@ -166,6 +172,12 @@ def _detect_product(match: TweetMatch) -> str | None:
     tweet = match.tweet
     group = account_group_for_handle(tweet.author_username)
     if group is not None:
+        if group == "xai-bot":
+            return "Grok Bot"
+        if group.startswith("xai-"):
+            if re.search(r"\bgrok\s+bot\b", tweet.text, re.IGNORECASE):
+                return "Grok Bot"
+            return "Grok"
         if group.startswith("anthropic"):
             return "Claude"
         if group.startswith("openai"):
@@ -181,9 +193,27 @@ def _detect_product(match: TweetMatch) -> str | None:
     ).lower()
     if "claude" in text or "anthropic" in text:
         return "Claude"
+    if re.search(r"\bgrok\s+bot\b", text):
+        return "Grok Bot"
+    if "grok" in text or "xai" in text or "x.ai" in text:
+        return "Grok"
     if "codex" in text or "openai" in text or "chatgpt" in text:
         return "Codex"
     return None
+
+
+def _signal_label(text: str) -> str:
+    if _is_reset_credit(text):
+        return "Possible reset credit · Check your account for eligibility and redemption"
+    return "Possible usage-limit reset announcement · Check the original post"
+
+
+def _is_reset_credit(text: str) -> bool:
+    return re.search(
+        r"\b(?:banked\s+resets?|reset\s+(?:cards?|tokens?|credits?)|resettable\s+tokens?)\b",
+        text,
+        re.IGNORECASE,
+    ) is not None
 
 
 class StdoutNotifier:

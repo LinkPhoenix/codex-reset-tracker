@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass
 from typing import Pattern
 
+from .accounts import account_group_for_handle
 from .config import MatchingConfig
 from .models import TweetMatch, TweetRecord
 
@@ -42,6 +43,9 @@ class RegexMatcher:
         if not matched:
             return None
 
+        if not _relevant_grok_signal(tweet.author_username, text):
+            return None
+
         excerpt = self._excerpt(text, include_hits)
         return TweetMatch(
             tweet=tweet,
@@ -66,3 +70,22 @@ class RegexMatcher:
 
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
+
+
+_GROK_PRODUCT = re.compile(r"\b(?:grok|supergrok|xai|x\.ai)\b", re.IGNORECASE)
+_GROK_QUOTA = re.compile(
+    r"\b(?:usage|quota|limits?|allowance|weekly|credits?|tokens?|banked)\b",
+    re.IGNORECASE,
+)
+
+
+def _relevant_grok_signal(author: str, text: str) -> bool:
+    group = account_group_for_handle(author)
+    if group is None or not group.startswith("xai-"):
+        return True
+    if _GROK_QUOTA.search(text) is None:
+        return False
+    # Broad company and personal accounts discuss many unrelated resets.
+    if group in {"xai-official", "xai-people"}:
+        return _GROK_PRODUCT.search(text) is not None
+    return True

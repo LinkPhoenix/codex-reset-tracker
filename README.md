@@ -104,7 +104,7 @@ Telegram quick path:
 ### Installable Discord bot
 
 The tracker can run as a Discord application bot with per-server channel
-configuration and slash commands. This mode posts Codex and Claude reset signals
+configuration and slash commands. This mode posts Codex, Claude and Grok reset signals
 to one selected text channel per server. It runs on infrastructure you control;
 it is not a hosted public bot service.
 
@@ -228,8 +228,8 @@ That means broad or noisy search results from unrelated accounts are recorded as
 
 ### Seeded Watchlist
 
-The default watchlist includes official accounts and active developer-facing
-people from OpenAI and Anthropic/Claude.
+The default watchlist includes official accounts and relevant people from
+OpenAI, Anthropic/Claude and SpaceXAI/Grok.
 
 | Group | Handles |
 | --- | --- |
@@ -239,6 +239,8 @@ people from OpenAI and Anthropic/Claude.
 | Anthropic official | `@AnthropicAI`, `@claudeai`, `@ClaudeDevs` |
 | Anthropic people | `@DarioAmodei`, `@DanielaAmodei`, `@jackclarkSF`, `@mikeyk`, `@ch402` |
 | Claude Code | `@bcherny` |
+| SpaceXAI and Grok | `@SpaceXAI`, `@grok`, `@bot` (Grok Bot) |
+| Grok people | `@elonmusk` |
 
 Sources used to seed this list include official X pages and public index pages
 for [OpenAI Developers](https://x.com/OpenAIDevs),
@@ -248,6 +250,17 @@ for [OpenAI Developers](https://x.com/OpenAIDevs),
 [@ClaudeDevs launch](https://awesomeagents.ai/news/anthropic-claudedevs-x-account-launch/),
 and public profiles for [Boris Cherny](https://x.com/bcherny/status/2015524460481388760)
 and the [Anthropic radar](https://llmgram.app/anthropic-radar/).
+The Grok watchlist is informed by [SpaceXAI's official account links](https://x.ai/contact)
+and [whenreset.dev's Grok source list](https://whenreset.dev/grok).
+For broad accounts such as `@elonmusk` and `@SpaceXAI`, a Grok product cue and
+a usage/limit cue are required in addition to the reset keyword. Grok Bot alerts
+are labeled separately because its allowance is separate from Grok chat.
+Existing `config.json` files keep their account choices; run
+`uv run codex-reset-tracker accounts defaults` to add the new recommendations.
+
+Reset posts are potential signals, not confirmation that a particular account's
+quota changed. Banked resets and reset tokens may require redemption; read the
+linked original post and check the product's own usage page.
 
 ## Timezones
 

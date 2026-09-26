@@ -34,6 +34,10 @@ DEFAULT_TRACKED_ACCOUNTS: tuple[TrackedAccount, ...] = (
     TrackedAccount("mikeyk", "America/Los_Angeles", "anthropic-people", "Mike Krieger"),
     TrackedAccount("ch402", "America/Los_Angeles", "anthropic-people", "Chris Olah"),
     TrackedAccount("bcherny", "America/Los_Angeles", "anthropic-code", "Boris Cherny / Claude Code"),
+    TrackedAccount("SpaceXAI", "America/Los_Angeles", "xai-official", "official SpaceXAI updates"),
+    TrackedAccount("grok", "America/Los_Angeles", "xai-grok", "official Grok account"),
+    TrackedAccount("bot", "America/Los_Angeles", "xai-bot", "Grok Bot account"),
+    TrackedAccount("elonmusk", "America/Los_Angeles", "xai-people", "Elon Musk / Grok announcements"),
 )
 
 
