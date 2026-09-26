@@ -15,7 +15,7 @@ Telegram, email, webhook, desktop popup, or stdout.
 ## Fast Start
 
 ```bash
-git clone https://github.com/vTuanpham/codex-reset-tracker.git
+git clone --branch discord-bot https://github.com/LinkPhoenix/codex-reset-tracker.git
 cd codex-reset-tracker
 ./install.sh
 uv run codex-reset-tracker setup
@@ -81,7 +81,7 @@ session.
 | Desktop | active workstation popup | `setup-notifications` -> enable desktop |
 | Telegram | fastest mobile alert | `setup-notifications` -> enable Telegram |
 | Email | durable fallback | `setup-notifications` -> enable email |
-| Webhook | Discord, Slack, ntfy, Pushover, Home Assistant | `setup-notifications` -> enable webhook |
+| Webhook | Discord webhook, Slack, ntfy, Pushover, Home Assistant | `setup-notifications` -> enable webhook |
 | stdout | logs and testing | enabled by default |
 
 Desktop is asked first in the wizard. When running inside WSL, desktop
@@ -100,6 +100,120 @@ Telegram quick path:
 3. Paste the token into the wizard.
 4. Send any message to the new bot.
 5. Let the wizard auto-detect the chat id, or paste it manually.
+
+### Installable Discord bot
+
+The tracker can run as a Discord application bot with per-server channel
+configuration and slash commands. This mode posts Codex and Claude reset signals
+to one selected text channel per server. It runs on infrastructure you control;
+it is not a hosted public bot service.
+
+1. Create an application in the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Under **Bot**, reset/copy the bot token. Keep it private.
+3. Under **Installation**, enable guild installation and the `bot` and
+   `applications.commands` scopes. Grant only **View Channels**, **Send Messages**,
+   and **Embed Links**.
+4. Install the application into your server, then set the token in `.env`:
+
+   ```dotenv
+   CODQ_DISCORD_BOT_TOKEN=your_bot_token
+   ```
+
+5. Install dependencies and start the bot with the tracker:
+
+   ```bash
+   uv sync
+   uv run codex-reset-tracker run-discord
+   ```
+
+6. In the channel where alerts should appear, a server manager runs
+   `/set-alert-channel` (or choose a channel in its option). Use
+   `/test-reset-alert` to post a synthetic test message,
+   `/preview-reset-alert` for a private embed preview, `/reset-bot-status` to
+   check channel permissions and the last completed tracker scan,
+   `/reset-bot-help` for in-Discord instructions, or `/stop-alerts` to remove
+   the server subscription.
+
+The bot registers application commands on startup and uses no privileged
+Gateway intents. Channel subscriptions are stored in `data/state.sqlite3` and
+survive restarts. This mode sends alerts directly through the bot; it does not
+require a Discord webhook. The existing generic webhook notifier remains
+available for users who prefer it.
+
+The bot does not ping roles or `@everyone`. Members who want push notifications
+should allow all messages in the alert channel and enable the relevant device
+notification settings. Members using mention-only notifications will not get a
+ping for an alert.
+
+To keep the bot online, run this command on an always-on machine or server.
+Protect the bot token like a password and never commit `.env`.
+
+#### Test on a private server from Windows
+
+This is a self-hosted bot: the Python process must stay running. For a private
+test server, follow these steps on the computer that will run the tracker:
+
+1. Install `uv` if needed. In PowerShell, the official WinGet package is:
+
+   ```powershell
+   winget install --id=astral-sh.uv -e
+   ```
+
+   See the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/)
+   for other install methods.
+2. In Discord's [Developer Portal](https://discord.com/developers/applications),
+   create an application and add its bot user. Keep **Public Bot** disabled if
+   only you should be able to add it to servers. In **Installation**, enable
+   **Guild Install** with the `bot` and `applications.commands` scopes, then
+   select only **View Channels**, **Send Messages**, and **Embed Links**.
+   Install it in your private test server.
+3. To receive real reset signals, prepare X authentication as described in
+   [X/Twitter Auth](#xtwitter-auth). The synthetic Discord test works without
+   X credentials; the tracker will stay connected to Discord and retry X on
+   later polling intervals until authentication is available.
+   Before exporting cookies, create the folder from PowerShell if needed:
+
+   ```powershell
+   New-Item -ItemType Directory -Force data
+   ```
+4. From the repository folder, install dependencies. Run the first-time setup
+   only if neither `config.json` nor `.env` already exists:
+
+   ```powershell
+   uv sync
+   ```
+
+   If this is a new setup, also run `uv run codex-reset-tracker setup` and
+   complete its prompts. The X cookie file should be at `data\x_cookies.json`.
+5. Open `.env` in a text editor and add the bot token. For faster slash-command
+   updates while testing, also add your test server ID (enable Discord Developer
+   Mode, then right-click the server and copy its ID):
+
+   ```dotenv
+   CODQ_DISCORD_BOT_TOKEN=your_bot_token
+   CODQ_DISCORD_TEST_GUILD_ID=your_test_server_id
+   ```
+
+   Do not paste the real token into a command, issue, or chat.
+6. In PowerShell, run:
+
+   ```powershell
+   uv run codex-reset-tracker run-discord
+   ```
+
+   The test guild ID makes slash commands available in that server immediately;
+   without it, commands are registered globally. Stop the process with `Ctrl+C`
+   when finished.
+7. In Discord, run `/set-alert-channel` in the test channel. Then run
+   `/reset-bot-status` and `/test-reset-alert`. The latter posts one visibly
+   synthetic, non-pinging message to the configured channel. Use
+   `/preview-reset-alert` if you only want to see the embed privately.
+
+The first tracker scan establishes a baseline and does not alert on old posts
+by default. Use `/test-reset-alert` to verify message delivery instead of
+waiting for a new public signal. Real X alerts require valid X authentication.
+To receive a device notification, allow all messages for the test channel and
+enable notifications in your Discord client.
 
 ## Accounts
 
