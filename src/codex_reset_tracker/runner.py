@@ -65,22 +65,35 @@ class QuotaResetTracker:
         await self.source.connect()
 
     async def run_forever(self) -> None:
-        await self.connect()
+        connected = False
         while True:
-            summary = await self.scan_once()
-            LOGGER.info(
-                "scan complete: scanned=%s matched=%s alerted=%s duplicates=%s",
-                summary.scanned,
-                summary.matched,
-                summary.alerted,
-                summary.duplicates,
-            )
-            seen_deleted, alert_deleted = self.state.prune_old_records(
-                seen_retention_days=DEFAULT_SEEN_RETENTION_DAYS,
-                alert_retention_days=DEFAULT_ALERT_RETENTION_DAYS,
-            )
-            if seen_deleted or alert_deleted:
-                LOGGER.info("pruned old records: seen=%s alerts=%s", seen_deleted, alert_deleted)
+            try:
+                if not connected:
+                    await self.connect()
+                    connected = True
+                summary = await self.scan_once()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                LOGGER.exception("tracker cycle failed; will retry after the polling interval")
+            else:
+                LOGGER.info(
+                    "scan complete: scanned=%s matched=%s alerted=%s duplicates=%s",
+                    summary.scanned,
+                    summary.matched,
+                    summary.alerted,
+                    summary.duplicates,
+                )
+                seen_deleted, alert_deleted = self.state.prune_old_records(
+                    seen_retention_days=DEFAULT_SEEN_RETENTION_DAYS,
+                    alert_retention_days=DEFAULT_ALERT_RETENTION_DAYS,
+                )
+                if seen_deleted or alert_deleted:
+                    LOGGER.info(
+                        "pruned old records: seen=%s alerts=%s",
+                        seen_deleted,
+                        alert_deleted,
+                    )
             await asyncio.sleep(self._sleep_seconds())
 
     async def scan_once(self) -> ScanSummary:

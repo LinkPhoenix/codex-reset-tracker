@@ -12,6 +12,7 @@ license = { text = "MIT" }
 authors = [{ name = "Codex Reset Tracker" }]
 dependencies = [
     "python-dotenv>=1.0.1",
+    "discord.py>=2.5.0",
     "twikit>=2.3.1",
 ]
 

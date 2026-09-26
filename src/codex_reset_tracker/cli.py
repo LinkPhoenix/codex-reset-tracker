@@ -65,6 +65,8 @@ def main(argv: list[str] | None = None) -> int:
             return asyncio.run(debug_scan(args))
         if args.command == "run":
             return asyncio.run(run(args))
+        if args.command == "run-discord":
+            return asyncio.run(run_discord(args))
         if args.command == "status":
             return status(args)
         if args.command == "service":
@@ -170,6 +172,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     run_cmd = subcommands.add_parser("run", help="run continuously")
     run_cmd.add_argument("--config", type=Path, default=Path("config.json"))
+
+    discord_cmd = subcommands.add_parser(
+        "run-discord", help="run the tracker and an installable Discord bot"
+    )
+    discord_cmd.add_argument("--config", type=Path, default=Path("config.json"))
 
     status_cmd = subcommands.add_parser("status", help="show last tracker status")
     status_cmd.add_argument("--config", type=Path, default=Path("config.json"))
@@ -357,6 +364,15 @@ async def run(args) -> int:
     config = load_config(args.config)
     config.data_dir.mkdir(parents=True, exist_ok=True)
     await QuotaResetTracker(config).run_forever()
+    return 0
+
+
+async def run_discord(args) -> int:
+    from .discord_bot import run_discord_tracker
+
+    config = load_config(args.config)
+    config.data_dir.mkdir(parents=True, exist_ok=True)
+    await run_discord_tracker(config)
     return 0
 
 

@@ -50,6 +50,56 @@ class StateStore:
                 (key, value),
             )
 
+    def set_discord_channel(self, guild_id: int, channel_id: int) -> None:
+        with self._db:
+            self._db.execute(
+                """
+                INSERT INTO discord_channels (guild_id, channel_id, updated_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(guild_id) DO UPDATE SET
+                    channel_id = excluded.channel_id,
+                    updated_at = excluded.updated_at
+                """,
+                (str(guild_id), str(channel_id), utc_now_iso()),
+            )
+
+    def remove_discord_channel(self, guild_id: int) -> bool:
+        with self._db:
+            result = self._db.execute(
+                "DELETE FROM discord_channels WHERE guild_id = ?", (str(guild_id),)
+            )
+        return result.rowcount > 0
+
+    def discord_channels(self) -> list[tuple[int, int]]:
+        rows = self._db.execute(
+            "SELECT guild_id, channel_id FROM discord_channels ORDER BY guild_id"
+        ).fetchall()
+        return [(int(row["guild_id"]), int(row["channel_id"])) for row in rows]
+
+    def discord_delivered_guilds(self, alert_key: str) -> set[int]:
+        rows = self._db.execute(
+            "SELECT guild_id FROM discord_deliveries WHERE alert_key = ?",
+            (alert_key,),
+        ).fetchall()
+        return {int(row["guild_id"]) for row in rows}
+
+    def mark_discord_delivered(
+        self, alert_key: str, guild_id: int, channel_id: int
+    ) -> None:
+        with self._db:
+            self._db.execute(
+                """
+                INSERT INTO discord_deliveries (
+                    alert_key, guild_id, channel_id, delivered_at
+                )
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(alert_key, guild_id) DO UPDATE SET
+                    channel_id = excluded.channel_id,
+                    delivered_at = excluded.delivered_at
+                """,
+                (alert_key, str(guild_id), str(channel_id), utc_now_iso()),
+            )
+
     def has_seen(self, tweet: TweetRecord) -> bool:
         row = self._db.execute(
             "SELECT 1 FROM seen_tweets WHERE tweet_id = ?",
@@ -149,10 +199,34 @@ class StateStore:
                 """
             )
             self._db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS discord_channels (
+                    guild_id TEXT PRIMARY KEY,
+                    channel_id TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+                """
+            )
+            self._db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS discord_deliveries (
+                    alert_key TEXT NOT NULL,
+                    guild_id TEXT NOT NULL,
+                    channel_id TEXT NOT NULL,
+                    delivered_at TEXT NOT NULL,
+                    PRIMARY KEY (alert_key, guild_id)
+                )
+                """
+            )
+            self._db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_seen_tweets_first_seen_at ON seen_tweets(first_seen_at)"
             )
             self._db.execute(
                 "CREATE INDEX IF NOT EXISTS idx_alerts_delivered_at ON alerts(delivered_at)"
+            )
+            self._db.execute(
+                "CREATE INDEX IF NOT EXISTS idx_discord_deliveries_delivered_at "
+                "ON discord_deliveries(delivered_at)"
             )
 
     def prune_old_records(
@@ -174,6 +248,9 @@ class StateStore:
             )
             alert_result = self._db.execute(
                 "DELETE FROM alerts WHERE delivered_at < ?", (alert_cutoff,)
+            )
+            self._db.execute(
+                "DELETE FROM discord_deliveries WHERE delivered_at < ?", (alert_cutoff,)
             )
 
         return seen_result.rowcount, alert_result.rowcount
